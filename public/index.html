@@ -15,6 +15,7 @@
         .project-card { background: #1e293b; padding: 15px; border-left: 4px solid #38bdf8; margin-bottom: 15px; position: relative; }
         .delete-btn { background: #ef4444; color: white; border: none; padding: 5px 10px; cursor: pointer; position: absolute; top: 15px; right: 15px; width: auto; font-size: 12px; }
         .delete-btn:hover { background: #dc2626; }
+        .admin-lock { border-bottom: 1px solid #38bdf8; padding-bottom: 15px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -23,6 +24,9 @@
         
         <!-- Submission Form -->
         <form id="projectForm">
+            <div class="admin-lock">
+                <input type="password" id="adminPass" placeholder="Admin Password (Required to Post)" required>
+            </div>
             <h3>Add New Security Log / Write-up</h3>
             <input type="text" id="title" placeholder="Log Title (e.g., TryHackMe: Basic Pentesting)" required>
             <select id="category">
@@ -62,28 +66,49 @@
         }
 
         async function deleteProject(id) {
+            const pass = prompt('Enter Admin Password to verify deletion:');
+            if (!pass) return;
+
             if (confirm('Are you sure you want to delete this log?')) {
-                await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-                fetchProjects();
+                const res = await fetch(`/api/projects/${id}`, { 
+                    method: 'DELETE',
+                    headers: { 'x-admin-pass': pass }
+                });
+                
+                if (res.ok) {
+                    fetchProjects();
+                } else {
+                    alert('Access Denied: Incorrect Password');
+                }
             }
         }
 
         document.getElementById('projectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const pass = document.getElementById('adminPass').value;
             const newProject = {
                 title: document.getElementById('title').value,
                 category: document.getElementById('category').value,
                 description: document.getElementById('description').value
             };
 
-            await fetch('/api/projects', {
+            const res = await fetch('/api/projects', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-admin-pass': pass
+                },
                 body: JSON.stringify(newProject)
             });
 
-            document.getElementById('projectForm').reset();
-            fetchProjects();
+            if (res.ok) {
+                // Clear only the content fields, keep the password for easy rapid posting
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+                fetchProjects();
+            } else {
+                alert('Access Denied: Incorrect Password');
+            }
         });
 
         fetchProjects();
