@@ -5,12 +5,13 @@ const app = express();
 
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
+const ADMIN_PASS = process.env.ADMIN_PASS; // Fetches your secure Render password
 
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Connect to MongoDB
+// Connect to Database
 mongoose.connect(MONGO_URI)
   .then(() => console.log('Successfully connected to MongoDB Atlas!'))
   .catch(err => console.error('MongoDB connection error:', err));
@@ -24,10 +25,20 @@ const projectSchema = new mongoose.Schema({
 });
 const Project = mongoose.model('Project', projectSchema);
 
+// --- AUTH MIDDLEWARE ---
+const verifyAdmin = (req, res, next) => {
+  const clientPass = req.headers['x-admin-pass'];
+  if (clientPass === ADMIN_PASS) {
+    next(); // Password matches, proceed to route
+  } else {
+    res.status(401).json({ error: 'Unauthorized: Incorrect Admin Password' });
+  }
+};
+
 // --- 2. API ROUTES (CRUD) ---
 
-// CREATE: Save new security log
-app.post('/api/projects', async (req, res) => {
+// CREATE: Save new security log (PROTECTED)
+app.post('/api/projects', verifyAdmin, async (req, res) => {
   try {
     const newProject = new Project(req.body);
     const savedProject = await newProject.save();
@@ -37,7 +48,7 @@ app.post('/api/projects', async (req, res) => {
   }
 });
 
-// READ: Fetch all security logs
+// READ: Fetch all security logs (PUBLIC)
 app.get('/api/projects', async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
@@ -47,8 +58,8 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
-// DELETE: Remove a security log by ID
-app.delete('/api/projects/:id', async (req, res) => {
+// DELETE: Remove a security log by ID (PROTECTED)
+app.delete('/api/projects/:id', verifyAdmin, async (req, res) => {
   try {
     await Project.findByIdAndDelete(req.params.id);
     res.json({ message: 'Log deleted successfully' });
