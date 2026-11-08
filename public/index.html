@@ -13,9 +13,13 @@
         button { background: #38bdf8; color: #0f172a; padding: 10px 20px; border: none; cursor: pointer; font-weight: bold; width: 100%; }
         button:hover { background: #7dd3fc; }
         .project-card { background: #1e293b; padding: 15px; border-left: 4px solid #38bdf8; margin-bottom: 15px; position: relative; }
-        .delete-btn { background: #ef4444; color: white; border: none; padding: 5px 10px; cursor: pointer; position: absolute; top: 15px; right: 15px; width: auto; font-size: 12px; }
+        .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 5px; }
+        .delete-btn { background: #ef4444; color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 12px; }
         .delete-btn:hover { background: #dc2626; }
+        .edit-btn { background: #eab308; color: #0f172a; border: none; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .edit-btn:hover { background: #ca8a04; }
         .admin-lock { border-bottom: 1px solid #38bdf8; padding-bottom: 15px; margin-bottom: 15px; }
+        #cancelEditBtn { background: #64748b; margin-top: 10px; display: none; color: white; }
     </style>
 </head>
 <body>
@@ -25,10 +29,10 @@
         <!-- Submission Form -->
         <form id="projectForm">
             <div class="admin-lock">
-                <input type="password" id="adminPass" placeholder="Admin Password (Required to Post)" required>
+                <input type="password" id="adminPass" placeholder="Admin Password (Required for actions)" required>
             </div>
-            <h3>Add New Security Log / Write-up</h3>
-            <input type="text" id="title" placeholder="Log Title (e.g., TryHackMe: Basic Pentesting)" required>
+            <h3 id="formTitle">Add New Security Log / Write-up</h3>
+            <input type="text" id="title" placeholder="Log Title" required>
             <select id="category">
                 <option value="CTF Write-up">CTF Write-up</option>
                 <option value="Security+ Notes">Security+ Notes</option>
@@ -36,7 +40,8 @@
                 <option value="Vulnerability Research">Vulnerability Research</option>
             </select>
             <textarea id="description" rows="4" placeholder="Description of the methodology or notes..." required></textarea>
-            <button type="submit">UPLOAD TO DATABASE</button>
+            <button type="submit" id="submitBtn">UPLOAD TO DATABASE</button>
+            <button type="button" id="cancelEditBtn" onclick="cancelEdit()">CANCEL EDIT</button>
         </form>
 
         <!-- Display Area -->
@@ -45,6 +50,8 @@
     </div>
 
     <script>
+        let editingId = null; // Tracks if we are updating a record
+
         async function fetchProjects() {
             const res = await fetch('/api/projects');
             const projects = await res.json();
@@ -54,9 +61,16 @@
             if (projects.length === 0) list.innerHTML = '<p>No records found in database.</p>';
 
             projects.forEach(p => {
+                // Escaping quotes so they don't break the HTML onclick function
+                const safeTitle = p.title.replace(/'/g, "\\'");
+                const safeDesc = p.description.replace(/'/g, "\\'");
+                
                 list.innerHTML += `
                     <div class="project-card">
-                        <button class="delete-btn" onclick="deleteProject('${p._id}')">DELETE</button>
+                        <div class="action-btns">
+                            <button class="edit-btn" onclick="startEdit('${p._id}', '${safeTitle}', '${p.category}', '${safeDesc}')">EDIT</button>
+                            <button class="delete-btn" onclick="deleteProject('${p._id}')">DELETE</button>
+                        </div>
                         <small>[${p.category}] - ${new Date(p.createdAt).toLocaleDateString()}</small>
                         <h2>${p.title}</h2>
                         <p>${p.description}</p>
@@ -66,8 +80,8 @@
         }
 
         async function deleteProject(id) {
-            const pass = prompt('Enter Admin Password to verify deletion:');
-            if (!pass) return;
+            const pass = document.getElementById('adminPass').value;
+            if (!pass) return alert("Please enter the Admin Password in the top box first.");
 
             if (confirm('Are you sure you want to delete this log?')) {
                 const res = await fetch(`/api/projects/${id}`, { 
@@ -75,36 +89,57 @@
                     headers: { 'x-admin-pass': pass }
                 });
                 
-                if (res.ok) {
-                    fetchProjects();
-                } else {
-                    alert('Access Denied: Incorrect Password');
-                }
+                if (res.ok) fetchProjects();
+                else alert('Access Denied: Incorrect Password');
             }
+        }
+
+        function startEdit(id, title, category, description) {
+            editingId = id;
+            document.getElementById('title').value = title;
+            document.getElementById('category').value = category;
+            document.getElementById('description').value = description;
+            
+            document.getElementById('formTitle').innerText = "Edit Security Log";
+            document.getElementById('submitBtn').innerText = "UPDATE RECORD";
+            document.getElementById('submitBtn').style.background = "#eab308";
+            document.getElementById('cancelEditBtn').style.display = "block";
+            window.scrollTo(0, 0); // Scroll back to form
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            document.getElementById('projectForm').reset();
+            document.getElementById('formTitle').innerText = "Add New Security Log / Write-up";
+            document.getElementById('submitBtn').innerText = "UPLOAD TO DATABASE";
+            document.getElementById('submitBtn').style.background = "#38bdf8";
+            document.getElementById('cancelEditBtn').style.display = "none";
         }
 
         document.getElementById('projectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pass = document.getElementById('adminPass').value;
-            const newProject = {
+            const projectData = {
                 title: document.getElementById('title').value,
                 category: document.getElementById('category').value,
                 description: document.getElementById('description').value
             };
 
-            const res = await fetch('/api/projects', {
-                method: 'POST',
+            const url = editingId ? `/api/projects/${editingId}` : '/api/projects';
+            const method = editingId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
                 headers: { 
                     'Content-Type': 'application/json',
                     'x-admin-pass': pass
                 },
-                body: JSON.stringify(newProject)
+                body: JSON.stringify(projectData)
             });
 
             if (res.ok) {
-                // Clear only the content fields, keep the password for easy rapid posting
-                document.getElementById('title').value = '';
-                document.getElementById('description').value = '';
+                cancelEdit(); // Resets form back to normal
+                document.getElementById('adminPass').value = pass; // Keep password filled
                 fetchProjects();
             } else {
                 alert('Access Denied: Incorrect Password');
