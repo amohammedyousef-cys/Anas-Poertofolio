@@ -1,89 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anas Cybersecurity Portfolio</title>
-    <style>
-        body { background-color: #0f172a; color: #38bdf8; font-family: monospace; padding: 40px; margin: 0; }
-        h1 { border-bottom: 1px solid #38bdf8; padding-bottom: 10px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        form { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.1); }
-        input, select, textarea { width: 100%; padding: 10px; margin: 10px 0; background: #0f172a; border: 1px solid #38bdf8; color: white; box-sizing: border-box; }
-        input[type="file"] { background: #1e293b; border: 1px dashed #38bdf8; cursor: pointer; padding: 15px; }
-        button { background: #38bdf8; color: #0f172a; padding: 10px 20px; border: none; cursor: pointer; font-weight: bold; width: 100%; }
-        button:hover { background: #7dd3fc; }
-        .project-card { background: #1e293b; padding: 15px; border-left: 4px solid #38bdf8; margin-bottom: 15px; position: relative; }
-        .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 5px; }
-        .delete-btn { background: #ef4444; color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 12px; }
-        .edit-btn { background: #eab308; color: #0f172a; border: none; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        .admin-lock { border-bottom: 1px solid #38bdf8; padding-bottom: 15px; margin-bottom: 15px; }
-        #cancelEditBtn { background: #64748b; margin-top: 10px; display: none; color: white; }
-        .file-link { display: inline-block; margin-top: 10px; padding: 5px 10px; background: #0284c7; color: white; text-decoration: none; border-radius: 4px; font-size: 12px; }
-        .file-link:hover { background: #0369a1; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anas Cybersecurity Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #050b18;
+    --bg-2: #0a1428;
+    --glass: rgba(15, 28, 52, 0.55);
+    --glass-edge: rgba(103, 232, 249, 0.16);
+    --cyan: #22d3ee;
+    --blue: #3b82f6;
+    --text: #e6f1ff;
+    --muted: #8aa0bd;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(900px 500px at 85% -10%, rgba(59, 130, 246, 0.22), transparent 60%),
+        radial-gradient(700px 480px at -5% 20%, rgba(34, 211, 238, 0.12), transparent 60%),
+        var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+        linear-gradient(rgba(34, 211, 238, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 75%);
+    pointer-events: none;
+    z-index: 0;
+}
+.container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: clamp(24px, 5vw, 64px) clamp(16px, 4vw, 32px) 80px; }
+
+/* Header */
+header { margin-bottom: 40px; }
+.domain { font-family: var(--mono); font-size: 0.85rem; color: var(--cyan); display: flex; align-items: center; gap: 10px; }
+.domain::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); animation: pulse 2.4s ease-in-out infinite; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.8rem); line-height: 1.05; letter-spacing: -0.03em; margin: 14px 0 12px; font-weight: 700; background: linear-gradient(100deg, #fff 30%, var(--cyan) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tagline { color: var(--muted); max-width: 52ch; margin: 0; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+
+/* Terminal form */
+.terminal { background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-edge); border-radius: 14px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 0 40px rgba(34, 211, 238, 0.06); overflow: hidden; margin-bottom: 56px; }
+.term-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(5, 11, 24, 0.6); border-bottom: 1px solid var(--glass-edge); font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #1e3a5f; }
+.dot:nth-child(1) { background: #f87171; } .dot:nth-child(2) { background: #fbbf24; } .dot:nth-child(3) { background: #34d399; }
+.term-bar span { margin-left: 8px; }
+form { padding: clamp(18px, 4vw, 32px); font-family: var(--mono); }
+.admin-lock { display: flex; align-items: center; gap: 10px; padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px dashed var(--glass-edge); }
+.admin-lock .lock { color: var(--amber); font-size: 1.1rem; }
+h3 { font-family: var(--sans); font-size: 1.25rem; margin: 0 0 18px; font-weight: 500; }
+.field { display: block; margin-bottom: 16px; }
+.field > span { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+input, select, textarea { width: 100%; padding: 12px 14px; background: rgba(5, 11, 24, 0.75); border: 1px solid rgba(138, 160, 189, 0.25); border-radius: 8px; color: var(--text); font-family: var(--mono); font-size: 0.92rem; transition: border-color 0.2s, box-shadow 0.2s; }
+input::placeholder, textarea::placeholder { color: #53698a; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18); }
+.admin-lock input { border-color: rgba(251, 191, 36, 0.35); }
+.admin-lock input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.18); }
+textarea { resize: vertical; min-height: 110px; }
+select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--cyan) 50%), linear-gradient(135deg, var(--cyan) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+select option { background: var(--bg-2); }
+input[type="file"] { border: 1px dashed rgba(34, 211, 238, 0.45); padding: 16px; cursor: pointer; color: var(--muted); }
+input[type="file"]::file-selector-button { margin-right: 14px; padding: 8px 14px; border: 0; border-radius: 6px; background: rgba(34, 211, 238, 0.14); color: var(--cyan); font-family: var(--mono); cursor: pointer; }
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+button { font-family: var(--mono); font-size: 0.88rem; font-weight: 600; cursor: pointer; border: 0; border-radius: 8px; transition: transform 0.15s, box-shadow 0.2s, background 0.2s; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+#submitBtn { flex: 1 1 220px; padding: 14px 20px; color: #03111f; background: linear-gradient(100deg, var(--cyan), var(--blue)); box-shadow: 0 8px 24px rgba(34, 211, 238, 0.25); }
+#submitBtn:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(34, 211, 238, 0.4); }
+#submitBtn.editing { background: linear-gradient(100deg, var(--amber), #f59e0b); box-shadow: 0 8px 24px rgba(251, 191, 36, 0.25); }
+#cancelEditBtn { display: none; flex: 0 1 auto; padding: 14px 20px; background: transparent; color: var(--muted); border: 1px solid rgba(138, 160, 189, 0.35); }
+#cancelEditBtn:hover { color: var(--text); border-color: var(--text); }
+
+/* Records */
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
+.count { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+#projectsList { display: grid; gap: 20px; }
+.state { color: var(--muted); font-family: var(--mono); padding: 28px; border: 1px dashed var(--glass-edge); border-radius: 12px; text-align: center; }
+
+.project-card { position: relative; background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--glass-edge); border-radius: 14px; padding: clamp(20px, 3.5vw, 30px); overflow: hidden; transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s; }
+.project-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(var(--cyan), var(--blue)); }
+.project-card:hover { border-color: rgba(34, 211, 238, 0.45); transform: translateY(-3px); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4), 0 0 30px rgba(34, 211, 238, 0.08); }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+.meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.badge { font-family: var(--mono); font-size: 0.74rem; padding: 4px 10px; border-radius: 999px; color: var(--cyan); background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); }
+.date { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); }
+.action-btns { display: flex; gap: 8px; }
+.edit-btn, .delete-btn { padding: 6px 12px; font-size: 0.76rem; background: transparent; border: 1px solid; }
+.edit-btn { color: var(--amber); border-color: rgba(251, 191, 36, 0.4); }
+.edit-btn:hover { background: rgba(251, 191, 36, 0.12); }
+.delete-btn { color: var(--red); border-color: rgba(248, 113, 113, 0.4); }
+.delete-btn:hover { background: rgba(248, 113, 113, 0.12); }
+.project-card h2 { font-size: clamp(1.3rem, 3vw, 1.7rem); line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 10px; }
+.project-card p { margin: 0; color: #b8c7dd; max-width: 70ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.file-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 9px 14px; max-width: 100%; border-radius: 8px; font-family: var(--mono); font-size: 0.8rem; color: var(--cyan); text-decoration: none; background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.3); overflow-wrap: anywhere; transition: background 0.2s, box-shadow 0.2s; }
+.file-link:hover { background: rgba(34, 211, 238, 0.16); box-shadow: 0 0 18px rgba(34, 211, 238, 0.2); }
+
+@media (max-width: 560px) {
+    .action-btns { width: 100%; }
+    .action-btns button { flex: 1; }
+    #cancelEditBtn { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+}
+</style>
 </head>
 <body>
     <div class="container">
-        <h1>anascyber.site // Security Terminal</h1>
-        
-        <form id="projectForm">
-            <div class="admin-lock">
-                <input type="password" id="adminPass" placeholder="Admin Password (Required for actions)" required>
-            </div>
-            <h3 id="formTitle">Add New Security Log / Write-up</h3>
-            <input type="text" id="title" placeholder="Log Title" required>
-            <select id="category">
-                <option value="CTF Write-up">CTF Write-up</option>
-                <option value="Security+ Notes">Security+ Notes</option>
-                <option value="University Project">University Project</option>
-                <option value="Vulnerability Research">Vulnerability Research</option>
-            </select>
-            <textarea id="description" rows="4" placeholder="Description of the methodology or notes..." required></textarea>
-            
-            <!-- File Upload Section -->
-            <input type="file" id="fileUpload" accept="image/*,.pdf,.txt">
-            
-            <button type="submit" id="submitBtn">UPLOAD TO DATABASE</button>
-            <button type="button" id="cancelEditBtn" onclick="cancelEdit()">CANCEL EDIT</button>
-        </form>
+        <header>
+            <div class="domain">anascyber.site</div>
+            <h1>Security Terminal</h1>
+            <p class="tagline">CTF write-ups, Security+ notes, university projects and vulnerability research, all logged in one place.</p>
+        </header>
 
-        <h2>// Database Records</h2>
-        <div id="projectsList">Loading records...</div>
+        <div class="terminal">
+            <div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span>admin@anascyber ~ /records/new</span></div>
+            <form id="projectForm">
+                <div class="admin-lock">
+                    <span class="lock" aria-hidden="true">🔒</span>
+                    <input type="password" id="adminPass" placeholder="Admin password (required for all actions)" aria-label="Admin password" autocomplete="current-password" required>
+                </div>
+                <h3 id="formTitle">Add New Security Log / Write-up</h3>
+                <label class="field"><span>Title</span>
+                    <input type="text" id="title" placeholder="e.g. Buffer overflow on a legacy login service" required>
+                </label>
+                <label class="field"><span>Category</span>
+                    <select id="category">
+                        <option value="CTF Write-up">CTF Write-up</option>
+                        <option value="Security+ Notes">Security+ Notes</option>
+                        <option value="University Project">University Project</option>
+                        <option value="Vulnerability Research">Vulnerability Research</option>
+                    </select>
+                </label>
+                <label class="field"><span>Description</span>
+                    <textarea id="description" rows="4" placeholder="Describe the methodology or notes..." required></textarea>
+                </label>
+                <!-- File Upload Section -->
+                <label class="field"><span>Attachment (image, PDF or text, max 8MB)</span>
+                    <input type="file" id="fileUpload" accept="image/*,.pdf,.txt">
+                </label>
+                <div class="btn-row">
+                    <button type="submit" id="submitBtn">UPLOAD TO DATABASE</button>
+                    <button type="button" id="cancelEditBtn" onclick="cancelEdit()">CANCEL EDIT</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="section-head">
+            <h2 class="records-title">Database Records</h2>
+            <span class="count" id="recordCount"></span>
+        </div>
+        <div id="projectsList"><div class="state">Loading records...</div></div>
     </div>
 
     <script>
-        let editingId = null; 
+        let editingId = null;
+        let projectsCache = {};
+
+        // Escape user content before placing it in HTML
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
         async function fetchProjects() {
             const res = await fetch('/api/projects');
             const projects = await res.json();
             const list = document.getElementById('projectsList');
             list.innerHTML = '';
-            
-            if (projects.length === 0) list.innerHTML = '<p>No records found in database.</p>';
+            projectsCache = {};
+            document.getElementById('recordCount').innerText = projects.length + (projects.length === 1 ? ' record' : ' records');
+
+            if (projects.length === 0) list.innerHTML = '<div class="state">No records yet. Add your first write-up above.</div>';
 
             projects.forEach(p => {
-                const safeTitle = p.title.replace(/'/g, "\\'");
-                const safeDesc = p.description.replace(/'/g, "\\'");
-                
+                projectsCache[p._id] = p;
+
                 // If a file exists in the database, create a download button!
                 let fileHTML = '';
                 if (p.fileData && p.fileName) {
-                    fileHTML = `<a href="${p.fileData}" download="${p.fileName}" class="file-link">📎 Download Attachment: ${p.fileName}</a>`;
+                    fileHTML = `<a href="${p.fileData}" download="${esc(p.fileName)}" class="file-link">📎 Download attachment: ${esc(p.fileName)}</a>`;
                 }
 
                 list.innerHTML += `
-                    <div class="project-card">
-                        <div class="action-btns">
-                            <button class="edit-btn" onclick="startEdit('${p._id}', '${safeTitle}', '${p.category}', '${safeDesc}')">EDIT</button>
-                            <button class="delete-btn" onclick="deleteProject('${p._id}')">DELETE</button>
+                    <article class="project-card">
+                        <div class="card-top">
+                            <div class="meta">
+                                <span class="badge">${esc(p.category)}</span>
+                                <span class="date">${new Date(p.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div class="action-btns">
+                                <button class="edit-btn" onclick="startEditById('${esc(p._id)}')">EDIT</button>
+                                <button class="delete-btn" onclick="deleteProject('${esc(p._id)}')">DELETE</button>
+                            </div>
                         </div>
-                        <small>[${p.category}] - ${new Date(p.createdAt).toLocaleDateString()}</small>
-                        <h2>${p.title}</h2>
-                        <p>${p.description}</p>
+                        <h2>${esc(p.title)}</h2>
+                        <p>${esc(p.description)}</p>
                         ${fileHTML}
-                    </div>
+                    </article>
                 `;
             });
         }
@@ -97,6 +229,12 @@
             }
         }
 
+        // Looks up the record so titles/descriptions with quotes or line breaks never break the button
+        function startEditById(id) {
+            const p = projectsCache[id];
+            if (p) startEdit(p._id, p.title, p.category, p.description);
+        }
+
         function startEdit(id, title, category, description) {
             editingId = id;
             document.getElementById('title').value = title;
@@ -104,7 +242,7 @@
             document.getElementById('description').value = description;
             document.getElementById('formTitle').innerText = "Edit Security Log";
             document.getElementById('submitBtn').innerText = "UPDATE RECORD";
-            document.getElementById('submitBtn').style.background = "#eab308";
+            document.getElementById('submitBtn').classList.add('editing');
             document.getElementById('cancelEditBtn').style.display = "block";
             window.scrollTo(0, 0);
         }
@@ -114,7 +252,7 @@
             document.getElementById('projectForm').reset();
             document.getElementById('formTitle').innerText = "Add New Security Log / Write-up";
             document.getElementById('submitBtn').innerText = "UPLOAD TO DATABASE";
-            document.getElementById('submitBtn').style.background = "#38bdf8";
+            document.getElementById('submitBtn').classList.remove('editing');
             document.getElementById('cancelEditBtn').style.display = "none";
         }
 
@@ -129,7 +267,7 @@
         document.getElementById('projectForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pass = document.getElementById('adminPass').value;
-            
+
             // Collect standard data
             const projectData = {
                 title: document.getElementById('title').value,
@@ -159,12 +297,12 @@
 
             if (res.ok) {
                 const savedPass = document.getElementById('adminPass').value;
-                cancelEdit(); 
+                cancelEdit();
                 document.getElementById('adminPass').value = savedPass;
                 fetchProjects();
             } else {
                 alert('Access Denied or Error Occurred');
-                document.getElementById('submitBtn').innerText = "UPLOAD TO DATABASE";
+                document.getElementById('submitBtn').innerText = editingId ? "UPDATE RECORD" : "UPLOAD TO DATABASE";
             }
         });
 
