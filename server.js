@@ -5,7 +5,7 @@ const app = express();
 
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
-const ADMIN_PASS = process.env.ADMIN_PASS; // Fetches your secure Render password
+const ADMIN_PASS = process.env.ADMIN_PASS; 
 
 // Middleware
 app.use(express.json());
@@ -29,7 +29,7 @@ const Project = mongoose.model('Project', projectSchema);
 const verifyAdmin = (req, res, next) => {
   const clientPass = req.headers['x-admin-pass'];
   if (clientPass === ADMIN_PASS) {
-    next(); // Password matches, proceed to route
+    next(); 
   } else {
     res.status(401).json({ error: 'Unauthorized: Incorrect Admin Password' });
   }
@@ -37,7 +37,7 @@ const verifyAdmin = (req, res, next) => {
 
 // --- 2. API ROUTES (CRUD) ---
 
-// CREATE: Save new security log (PROTECTED)
+// CREATE
 app.post('/api/projects', verifyAdmin, async (req, res) => {
   try {
     const newProject = new Project(req.body);
@@ -48,7 +48,7 @@ app.post('/api/projects', verifyAdmin, async (req, res) => {
   }
 });
 
-// READ: Fetch all security logs (PUBLIC)
+// READ
 app.get('/api/projects', async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
@@ -58,7 +58,21 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
-// DELETE: Remove a security log by ID (PROTECTED)
+// UPDATE
+app.put('/api/projects/:id', verifyAdmin, async (req, res) => {
+  try {
+    const updatedProject = await Project.findByIdAndUpdate(
+      req.params.id, 
+      req.body, 
+      { new: true }
+    );
+    res.json(updatedProject);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// DELETE
 app.delete('/api/projects/:id', verifyAdmin, async (req, res) => {
   try {
     await Project.findByIdAndDelete(req.params.id);
