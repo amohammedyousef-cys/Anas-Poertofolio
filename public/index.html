@@ -115,6 +115,23 @@ h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
 .file-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 9px 14px; max-width: 100%; border-radius: 8px; font-family: var(--mono); font-size: 0.8rem; color: var(--cyan); text-decoration: none; background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.3); overflow-wrap: anywhere; transition: background 0.2s, box-shadow 0.2s; }
 .file-link:hover { background: rgba(34, 211, 238, 0.16); box-shadow: 0 0 18px rgba(34, 211, 238, 0.2); }
 
+.project-card { --pad: clamp(20px, 3.5vw, 30px); padding: var(--pad); }
+.thumb { display: block; width: calc(100% + var(--pad) * 2); max-height: 260px; object-fit: cover; margin: calc(var(--pad) * -1) calc(var(--pad) * -1) 18px; border-bottom: 1px solid var(--glass-edge); }
+.admin-toggle { margin-top: 24px; padding: 10px 16px; font-size: 0.82rem; color: var(--cyan); background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.35); }
+.admin-toggle:hover { background: rgba(34, 211, 238, 0.16); }
+.terminal { animation: reveal 0.3s ease; }
+.terminal.collapsed { display: none; }
+@keyframes reveal { from { opacity: 0; transform: translateY(-8px); } }
+.toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 22px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 320px; }
+.chip { padding: 7px 14px; font-size: 0.78rem; font-weight: 400; color: var(--muted); background: transparent; border: 1px solid rgba(138, 160, 189, 0.3); border-radius: 999px; }
+.chip:hover { color: var(--text); border-color: var(--text); }
+.chip[aria-pressed="true"] { color: #03111f; background: var(--cyan); border-color: var(--cyan); font-weight: 600; }
+.search { flex: 1 1 200px; max-width: 280px; padding: 9px 14px; font-size: 0.85rem; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 50; max-width: min(360px, calc(100vw - 40px)); padding: 12px 16px; border-radius: 10px; font-family: var(--mono); font-size: 0.82rem; background: rgba(10, 20, 40, 0.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-edge); color: var(--text); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); animation: reveal 0.25s ease; }
+.toast.error { border-color: rgba(248, 113, 113, 0.55); color: #fecaca; }
+.toast.ok { border-color: rgba(52, 211, 153, 0.55); }
+
 @media (max-width: 560px) {
     .action-btns { width: 100%; }
     .action-btns button { flex: 1; }
@@ -132,9 +149,10 @@ h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
             <div class="domain">anascyber.site</div>
             <h1>Security Terminal</h1>
             <p class="tagline">CTF write-ups, Security+ notes, university projects and vulnerability research, all logged in one place.</p>
+            <button type="button" class="admin-toggle" id="adminToggle" aria-expanded="false" aria-controls="adminPanel" onclick="toggleAdmin()">🔒 Open admin terminal</button>
         </header>
 
-        <div class="terminal">
+        <div class="terminal collapsed" id="adminPanel">
             <div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span>admin@anascyber ~ /records/new</span></div>
             <form id="projectForm">
                 <div class="admin-lock">
@@ -171,37 +189,107 @@ h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
             <h2 class="records-title">Database Records</h2>
             <span class="count" id="recordCount"></span>
         </div>
+        <div class="toolbar">
+            <div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+            <input type="search" class="search" id="searchBox" placeholder="Search records..." aria-label="Search records" oninput="setQuery(this.value)">
+        </div>
         <div id="projectsList"><div class="state">Loading records...</div></div>
+        <div id="toastHost" role="status" aria-live="polite"></div>
     </div>
 
     <script>
         let editingId = null;
         let projectsCache = {};
+        let allProjects = [];
+        let activeCat = 'All';
+        let query = '';
 
         // Escape user content before placing it in HTML
         const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-        async function fetchProjects() {
-            const res = await fetch('/api/projects');
-            const projects = await res.json();
-            const list = document.getElementById('projectsList');
-            list.innerHTML = '';
-            projectsCache = {};
-            document.getElementById('recordCount').innerText = projects.length + (projects.length === 1 ? ' record' : ' records');
+        function toast(msg, type) {
+            const host = document.getElementById('toastHost');
+            const t = document.createElement('div');
+            t.className = 'toast ' + (type || '');
+            t.textContent = msg;
+            host.innerHTML = '';
+            host.appendChild(t);
+            setTimeout(() => t.remove(), 3800);
+        }
 
-            if (projects.length === 0) list.innerHTML = '<div class="state">No records yet. Add your first write-up above.</div>';
+        function openAdmin() {
+            document.getElementById('adminPanel').classList.remove('collapsed');
+            const b = document.getElementById('adminToggle');
+            b.setAttribute('aria-expanded', 'true');
+            b.textContent = '🔓 Close admin terminal';
+        }
+
+        function toggleAdmin() {
+            const open = !document.getElementById('adminPanel').classList.contains('collapsed');
+            if (open) {
+                document.getElementById('adminPanel').classList.add('collapsed');
+                const b = document.getElementById('adminToggle');
+                b.setAttribute('aria-expanded', 'false');
+                b.textContent = '🔒 Open admin terminal';
+            } else {
+                openAdmin();
+                document.getElementById('adminPass').focus();
+            }
+        }
+
+        function setCat(c) { activeCat = c; buildChips(); renderProjects(); }
+        function setQuery(q) { query = q.trim().toLowerCase(); renderProjects(); }
+
+        function buildChips() {
+            const cats = ['All', ...new Set(allProjects.map(p => p.category))];
+            if (!cats.includes(activeCat)) activeCat = 'All';
+            document.getElementById('chips').innerHTML = cats.map(c =>
+                `<button type="button" class="chip" aria-pressed="${c === activeCat}" data-cat="${esc(c)}" onclick="setCat(this.dataset.cat)">${esc(c)}</button>`
+            ).join('');
+        }
+
+        async function fetchProjects() {
+            try {
+                const res = await fetch('/api/projects');
+                allProjects = await res.json();
+            } catch (err) {
+                document.getElementById('projectsList').innerHTML = '<div class="state">Could not load records. Check your connection and refresh.</div>';
+                return;
+            }
+            projectsCache = {};
+            allProjects.forEach(p => projectsCache[p._id] = p);
+            buildChips();
+            renderProjects();
+        }
+
+        function renderProjects() {
+            const list = document.getElementById('projectsList');
+            const projects = allProjects.filter(p =>
+                (activeCat === 'All' || p.category === activeCat) &&
+                (!query || (p.title + ' ' + p.description + ' ' + p.category).toLowerCase().includes(query))
+            );
+            list.innerHTML = '';
+            document.getElementById('recordCount').innerText = projects.length === allProjects.length
+                ? allProjects.length + (allProjects.length === 1 ? ' record' : ' records')
+                : projects.length + ' of ' + allProjects.length + ' records';
+
+            if (allProjects.length === 0) { list.innerHTML = '<div class="state">No records yet. Open the admin terminal to add your first write-up.</div>'; return; }
+            if (projects.length === 0) { list.innerHTML = '<div class="state">No records match. Try another category or search term.</div>'; return; }
 
             projects.forEach(p => {
-                projectsCache[p._id] = p;
-
                 // If a file exists in the database, create a download button!
                 let fileHTML = '';
+                let thumbHTML = '';
                 if (p.fileData && p.fileName) {
                     fileHTML = `<a href="${p.fileData}" download="${esc(p.fileName)}" class="file-link">📎 Download attachment: ${esc(p.fileName)}</a>`;
+                    if (String(p.fileData).startsWith('data:image/')) {
+                        thumbHTML = `<img class="thumb" src="${p.fileData}" alt="${esc(p.fileName)}" loading="lazy">`;
+                    }
                 }
 
                 list.innerHTML += `
                     <article class="project-card">
+                        ${thumbHTML}
                         <div class="card-top">
                             <div class="meta">
                                 <span class="badge">${esc(p.category)}</span>
@@ -222,10 +310,10 @@ h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
 
         async function deleteProject(id) {
             const pass = document.getElementById('adminPass').value;
-            if (!pass) return alert("Please enter the Admin Password.");
+            if (!pass) { openAdmin(); document.getElementById('adminPass').focus(); return toast('Enter the admin password to delete a record.', 'error'); }
             if (confirm('Are you sure you want to delete this log?')) {
                 const res = await fetch(`/api/projects/${id}`, { method: 'DELETE', headers: { 'x-admin-pass': pass }});
-                if (res.ok) fetchProjects(); else alert('Access Denied: Incorrect Password');
+                if (res.ok) { toast('Record deleted.', 'ok'); fetchProjects(); } else toast('Access denied: incorrect password.', 'error');
             }
         }
 
@@ -244,7 +332,8 @@ h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
             document.getElementById('submitBtn').innerText = "UPDATE RECORD";
             document.getElementById('submitBtn').classList.add('editing');
             document.getElementById('cancelEditBtn').style.display = "block";
-            window.scrollTo(0, 0);
+            openAdmin();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function cancelEdit() {
@@ -279,7 +368,7 @@ h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
             const fileInput = document.getElementById('fileUpload');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                if (file.size > 8000000) return alert("File is too large! Max size is 8MB.");
+                if (file.size > 8000000) return toast('File is too large. Max size is 8MB.', 'error');
                 projectData.fileName = file.name;
                 projectData.fileData = await getBase64(file);
             }
@@ -297,11 +386,12 @@ h2.records-title { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; }
 
             if (res.ok) {
                 const savedPass = document.getElementById('adminPass').value;
+                toast(editingId ? 'Record updated.' : 'Record uploaded.', 'ok');
                 cancelEdit();
                 document.getElementById('adminPass').value = savedPass;
                 fetchProjects();
             } else {
-                alert('Access Denied or Error Occurred');
+                toast('Access denied or an error occurred. Check the password and try again.', 'error');
                 document.getElementById('submitBtn').innerText = editingId ? "UPDATE RECORD" : "UPLOAD TO DATABASE";
             }
         });
